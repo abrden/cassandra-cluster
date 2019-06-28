@@ -15,9 +15,9 @@ import (
 
 func main() {
 	// connect to the cluster
-	cluster := gocql.NewCluster("192.168.1.1", "192.168.1.2", "192.168.1.3")
+	cluster := gocql.NewCluster("192.168.50.41", "192.168.50.42", "192.168.50.43")
 
-	// cluster.PoolConfig.HostSelectionPolicy = gocql.DCAwareRoundRobinPolicy("?")
+	// cluster.PoolConfig.HostSelectionPolicy = gocql.DCAwareRoundRobinPolicy("local-datacenter-name")
 
 	// Create host selection policy using a simple host pool
 	// cluster.PoolConfig.HostSelectionPolicy = gocql.HostPoolHostPolicy(hostpool.New(nil))
@@ -25,7 +25,8 @@ func main() {
 	// cluster.PoolConfig.HostSelectionPolicy = gocql.HostPoolHostPolicy(
 		// hostpool.NewEpsilonGreedy(nil, 0, &hostpool.LinearEpsilonValueCalculator{}),)
 	
-	cluster.PoolConfig.HostSelectionPolicy = gocql.RoundRobinHostPolicy()
+	// cluster.PoolConfig.HostSelectionPolicy = gocql.RoundRobinHostPolicy()
+	cluster.PoolConfig.HostSelectionPolicy = gocql.TokenAwareHostPolicy(gocql.RoundRobinHostPolicy())
 	cluster.Keyspace = "example"
 	cluster.Consistency = gocql.Quorum
 	session, _ := cluster.CreateSession()
