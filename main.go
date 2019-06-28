@@ -1,7 +1,6 @@
 /* Before you execute the program, Launch `cqlsh` and execute:
-create keyspace example with replication = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };
-create table example.tweet(timeline text, id UUID, text text, PRIMARY KEY(id));
-create index on example.tweet(timeline);
+CREATE KEYSPACE hydro_monitor_data WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 3 };
+CREATE TABLE hydro_monitor_data.users (email string, password string, admin bool, primary key (email));
 */
 package main
 
@@ -32,28 +31,28 @@ func main() {
 	session, _ := cluster.CreateSession()
 	defer session.Close()
 
-	// insert a tweet
-	if err := session.Query(`INSERT INTO tweet (timeline, id, text) VALUES (?, ?, ?)`,
-		"me", gocql.TimeUUID(), "hello world").Exec(); err != nil {
+	// insert a user
+	if err := session.Query(`INSERT INTO users (email, password, admin) VALUES (?, ?, ?)`,
+		"bob@example.com", "secretandencryptedpassword", false).Exec(); err != nil {
 		log.Fatal(err)
 	}
 
-	var id gocql.UUID
-	var text string
+	var email string
 
 	/* Search for a specific set of records whose 'timeline' column matches
 	 * the value 'me'. The secondary index that we created earlier will be
 	 * used for optimizing the search */
-	if err := session.Query(`SELECT id, text FROM tweet WHERE timeline = ? LIMIT 1`,
-		"me").Consistency(gocql.One).Scan(&id, &text); err != nil {
+	// if err := session.Query(`SELECT id, text FROM tweet WHERE timeline = ? LIMIT 1`,
+	if err := session.Query(`SELECT email FROM users WHERE admin = ? LIMIT 1`,
+		true).Consistency(gocql.One).Scan(&email); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Tweet:", id, text)
+	fmt.Println("Admin:", email)
 
-	// list all tweets
-	iter := session.Query(`SELECT id, text FROM tweet WHERE timeline = ?`, "me").Iter()
-	for iter.Scan(&id, &text) {
-		fmt.Println("Tweet:", id, text)
+	// list all users
+	iter := session.Query(`SELECT email FROM users`).Iter()
+	for iter.Scan(&email) {
+		fmt.Println("User:", email)
 	}
 	if err := iter.Close(); err != nil {
 		log.Fatal(err)
